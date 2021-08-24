@@ -1,7 +1,7 @@
 clearScreen.
 
 set launchpadCoords to ship:geoposition.
-set altOffset to 30.238.
+set altOffset to 30.5.
 lock g to constant:g * body:mass / body:radius^2.
 lock trueRadar to alt:radar - altOffset.
 lock maxDecel to (ship:availablethrust / ship:mass) - g.
@@ -9,13 +9,18 @@ lock stopDist to ship:verticalspeed^2 / (2 * maxDecel).
 lock landing_throttle to stopDist / trueRadar.
 lock impactTime to trueRadar / abs(ship:verticalspeed).
 
+// set steeringManager:torqueEpsilonMax to 0.005. // original 0.001
+// set steeringManager:torqueEpsilonMin to 0.001. // original 0.0002
+// set steeringManager:rolltorquefactor to 10.
+set steeringManager:rollTorqueAdjust to 500.
+set steeringManager:rolltorquefactor to 10.
 
 function ascent_steering{
     return up + r(0, -90 * ship:apoapsis / 100000, 0).
 }
 
 function boostback_steering{
-    return up + r(0, 90, 0).
+    return heading(270, 0).
 }
 
 wait until ag9.
@@ -94,13 +99,13 @@ until false{
         }
     }
     if runmode = 10{
-        if trueRadar < stopDist * 1.5{
-            lock throttle to landing_throttle.
+        if abs(ship:verticalspeed) > 850 or trueRadar < stopDist{
+            lock throttle to 1.
             set runmode to 11.
         }
     }
     if runmode = 11{
-        if landing_throttle < 0.7{
+        if abs(ship:verticalspeed) < 400 or trueRadar < stopDist{
             lock throttle to 0.
             wait 0.1.
 
@@ -108,7 +113,7 @@ until false{
         }
     }
     if runmode = 12{
-        if trueRadar < stopDist * 0.75{
+        if trueRadar < stopDist * 1{
             lock throttle to landing_throttle.
             set runmode to 13.
         }
@@ -130,6 +135,8 @@ until false{
     if runmode = 20{
         break.
     }
+
+    WAIT 0.001.
 }
 
 unlock throttle.
